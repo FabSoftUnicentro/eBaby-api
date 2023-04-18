@@ -1,17 +1,16 @@
 const app = require("express")();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const uri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/?retryWrites=true&w=majority`;
 
 // Conecta no MongoDB
 mongoose.Promise = global.Promise;
-mongoose.connect(CHANGE_URL, {useNewUrlParser: true}).then(() => {
+mongoose.connect(uri, {useNewUrlParser: true}).then(() => {
     console.log("Conectado ao mongo")
   }).catch((err) => {
     console.log("Erro ao se conectar: "+err)
   })
 
-
-const port = process.env.PORT || 3000;
 // Carrega o model de Usuário
 require("./models/user");
 require("./models/kid");
@@ -22,7 +21,4 @@ app.use(bodyParser.json());
 app.use("/api", require("./controllers/userController"));
 app.use("/api", require("./controllers/kidController"));
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT,() => {
-  console.log("Servidor Rodando! ")
-})
+module.exports = app;

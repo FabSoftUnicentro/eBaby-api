@@ -1,7 +1,7 @@
 const app = require("express")();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const uri = const uri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
 
 // Conecta no MongoDB
 mongoose.Promise = global.Promise;

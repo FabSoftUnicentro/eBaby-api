@@ -9,7 +9,7 @@ module.exports = async (req, res, next) => {
   }
 
   try {
-    const decoded = await promisify(jwt.verify)(authHeader, "secret");
+    const decoded = await promisify(jwt.verify)(authHeader, "secret", {ignoreExpiration: true});
 
     req.userId = decoded.id;
 

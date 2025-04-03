@@ -9,36 +9,39 @@ const TestQuestion = mongoose.model("TestQuestion");
 router.use(authMiddleware);
 
 router.post("/registerKid", async (req, res) => {
-  const kidData = {
-    cpf: req.body.kid[0]["cpf"],
-    name: req.body.kid[0]["name"],
-    dateOfBirth: req.body.kid[0]["birthAge"],
-    gestationalAge: req.body.kid[0]["gestationalAge"],
-    weight: req.body.testkid[0]["weight"],
-    length: req.body.testkid[0]["length"],
-  };
-
   try {
-    let kid = await Kid.findOne({ cpf: kidData.cpf });
-    if (!kid) {
-      kid = await Kid.create(kidData);
-    }
 
-    const test = await Test.create({
-      cpfKid: kidData.cpf,
-      cpfAgent: req.body.agent.cpf,
-      weight: req.body.testkid[0]["weight"],
-      length: req.body.testkid[0]["length"],
-      note: req.body.testkid[0]["note"],
-      done: req.body.testkid[0]["done"],
-    });
+    for (let i = 0; i < req.body.kid.length; i++) {
+      const kidData = {
+        cpf: req.body.kid[i]["cpf"],
+        name: req.body.kid[i]["name"],
+        dateOfBirth: req.body.kid[i]["birthAge"],
+        gestationalAge: req.body.kid[i]["gestationalAge"],
+        weight: req.body.testkid[i]["weight"],
+        length: req.body.testkid[i]["length"],
+      };
 
-    for (item of req.body.testkid[0].itens) {
-      await TestQuestion.create({
-        test_id: test._id,
-        question_id: item.id,
-        success: item.result,
+      let kid = await Kid.findOne({ cpf: kidData.cpf });
+      if (!kid) {
+        kid = await Kid.create(kidData);
+      }
+
+      const test = await Test.create({
+        cpfKid: kidData.cpf,
+        cpfAgent: req.body.agent.cpf,
+        weight: req.body.testkid[i]["weight"],
+        length: req.body.testkid[i]["length"],
+        note: req.body.testkid[i]["note"],
+        done: req.body.testkid[i]["done"],
       });
+
+      for (item of req.body.testkid[i].itens) {
+        await TestQuestion.create({
+          test_id: test._id,
+          question_id: item.id,
+          success: item.result,
+        });
+      }
     }
 
     return res.json({ success: true });

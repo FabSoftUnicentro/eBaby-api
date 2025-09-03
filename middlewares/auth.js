@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 
 module.exports = async (req, res, next) => {
-  const authHeader = req.body.agent.token;
+  const authHeader = req?.body?.agent?.token || req?.query?.token;
 
   if (!authHeader) {
     return res.status(401).send({ error: "No token provided" });

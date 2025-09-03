@@ -1,7 +1,8 @@
 const app = require("express")();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const uri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://dan:1234@ebaby.t0bujpo.mongodb.net/test`;
+console.log(uri);
 
 // Conecta no MongoDB
 mongoose.Promise = global.Promise;
@@ -25,6 +26,7 @@ app.use(bodyParser.json());
 // Inicia as rotas da API
 app.use("/api", require("./controllers/userController"));
 app.use("/api", require("./controllers/kidController"));
+app.use("/api", require("./controllers/spreadSheetController"))
 
 // Health Check
 app.get("/health", async (req, res) => {

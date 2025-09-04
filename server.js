@@ -23,6 +23,7 @@ require("./models/testQuestion");
 app.use(bodyParser.json());
 
 // Inicia as rotas da API
+app.use("/api", require("./controllers/spreadSheetController"))
 app.use("/api", require("./controllers/userController"));
 app.use("/api", require("./controllers/kidController"));
 

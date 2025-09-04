@@ -10,6 +10,10 @@ const KidSchema = new mongoose.Schema({
       type: String,
       required: true
     },
+    sex: {
+      type: String,
+      required: false,
+    },
     dateOfBirth:{
         type: Date,
         required: true,

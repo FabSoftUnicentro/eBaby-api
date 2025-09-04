@@ -19,6 +19,7 @@ router.post("/registerKid", async (req, res) => {
           name: req.body.kid[i]["name"],
           dateOfBirth: req.body.kid[i]["birthAge"],
           gestationalAge: req.body.kid[i]["gestationalAge"],
+          sex: req.body.kid[i]["sex"],
           weight: req.body.testkid[i]["weight"],
           length: req.body.testkid[i]["length"],
         };

@@ -1,8 +1,8 @@
-version: '3.5'
-
 services:
   ebaby-api:
-    build: ./
+    build:
+      context: ./
+      dockerfile: dockerfileDev
     ports:
       - "127.0.0.1:3000:3000"
     networks:
@@ -13,6 +13,8 @@ services:
       - mongo
     env_file:
       - .env
+    volumes:
+      - .:/app
   mongo:
     image: mongo
     environment:

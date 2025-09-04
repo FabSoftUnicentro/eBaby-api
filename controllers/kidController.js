@@ -19,6 +19,7 @@ router.post("/registerKid", async (req, res) => {
           name: req.body.kid[i]["name"],
           dateOfBirth: req.body.kid[i]["birthAge"],
           gestationalAge: req.body.kid[i]["gestationalAge"],
+          sex: req.body.kid[i]["sex"],
           weight: req.body.testkid[i]["weight"],
           length: req.body.testkid[i]["length"],
         };
@@ -55,14 +56,6 @@ router.post("/registerKid", async (req, res) => {
           );
         }
       });
-
-      for (item of req.body.testkid[i].itens) {
-        await TestQuestion.create({
-          test_id: test._id,
-          question_id: item.id,
-          success: item.result,
-        });
-      }
     }
 
     return res.json({ success: true });

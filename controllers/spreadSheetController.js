@@ -51,7 +51,8 @@ const getResults = async () => {
   const testIds = tests.map(t => t._id);
   const testQuestions = await TestQuestion.find({ test_id: { $in: testIds } }).lean();
   const questionsByTestId = testQuestions.reduce((acc, tq) => {
-    (acc[tq.test_id] ||= []).push(tq);
+    if (!acc[tq.test_id]) acc[tq.test_id] = [];
+    acc[tq.test_id].push(tq);
     return acc;
   }, {});
 

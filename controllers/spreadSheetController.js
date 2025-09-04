@@ -1,112 +1,98 @@
 const router = require("express").Router();
 const mongoose = require("mongoose");
-const fs = require('fs');
-const path = require('path');
-const converter = require('json-2-csv');
-const moment = require('moment');
+const fs = require("fs");
+const path = require("path");
+const converter = require("json-2-csv");
+const moment = require("moment");
 
-const currentDir = __dirname;
-const parentDir = path.join(currentDir, '..');
-const filePath = path.join(parentDir, 'assets', 'questions.json');
-const questions = fs.readFileSync(filePath, {
-    'encoding': 'utf-8'
-});
-const QUESTIONS = JSON.parse(questions);
+const filePath = path.join(__dirname, "..", "assets", "questions.json");
+const QUESTIONS = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
-const Kid = mongoose.model('Kid');
-const Test = mongoose.model('Test');
-const TestQuestion = mongoose.model('TestQuestion');
+const Kid = mongoose.model("Kid");
+const Test = mongoose.model("Test");
+const TestQuestion = mongoose.model("TestQuestion");
 
-const findQuestionById = (id) => QUESTIONS.find(question => question.id === id);
+const QUESTION_MAP = Object.fromEntries(
+  QUESTIONS.map(q => [q.id, q])
+);
 
-const getTestQuestionResult = (testQuestion) => {
-    switch (testQuestion.success) {
-        case 0:
-            return 'E';
-            break;
-        case 1:
-            return 'A';
-            break;
-        case 2:
-            return 'SO'
-            break;
-        case 3:
-            return 'R';
-            break;
-        default:
-            return 'SO';
-    };
+const findQuestionById = id => QUESTION_MAP[id];
+
+const getTestQuestionResult = ({ success }) => {
+  switch (success) {
+    case 0: return "E";
+    case 1: return "A";
+    case 2: return "SO";
+    case 3: return "R";
+    default: return "SO";
+  }
 };
 
-const createRow = () => {
-    const row = {
-        ID: '-',
-        NOME: '-',
-        DATA: '-',
-        DN: '-',
-        SEXO: '-',
-        GESTAÇÃO: '-',
-        IDADE: '-',
-        UBS: '-',
-        LOCAL: '-'
-    };
+const createRow = () => Object.fromEntries([
+  ["ID", "-"],
+  ["NOME", "-"],
+  ["DATA", "-"],
+  ["DN", "-"],
+  ["SEXO", "-"],
+  ["GESTAÇÃO", "-"],
+  ["IDADE", "-"],
+  ["UBS", "-"],
+  ["LOCAL", "-"],
+  ...QUESTIONS.map(q => [q.perguntaCurta.toUpperCase(), "SO"])
+]);
 
-    for (const question of QUESTIONS) {
-        row[question.perguntaCurta.toUpperCase()] = 'SO';
+const getResults = async () => {
+  const kids = await Kid.find({}).sort("createdAt").lean();
+  const kidCpfs = kids.map(k => k.cpf);
+
+  const tests = await Test.find({ cpfKid: { $in: kidCpfs } }).lean();
+  const testsByCpf = Object.fromEntries(tests.map(t => [t.cpfKid, t]));
+
+  const testIds = tests.map(t => t._id);
+  const testQuestions = await TestQuestion.find({ test_id: { $in: testIds } }).lean();
+  const questionsByTestId = testQuestions.reduce((acc, tq) => {
+    (acc[tq.test_id] ||= []).push(tq);
+    return acc;
+  }, {});
+
+  return kids.map((kid, i) => {
+    const row = createRow();
+    row.ID = i + 1;
+    row.NOME = kid.name;
+    row.DN = moment(kid.dateOfBirth).format("DD/MM/YYYY");
+    row.SEXO = kid.sex || "-";
+    row.GESTAÇÃO = kid.gestationalAge;
+
+    const test = testsByCpf[kid.cpf];
+    if (!test) return null;
+
+    row.DATA = moment(test.createdAt).format("DD/MM/YYYY");
+    row.IDADE = moment(test.createdAt).diff(moment(kid.dateOfBirth), "years");
+
+    for (const tq of questionsByTestId[test._id] || []) {
+      const originalQuestion = findQuestionById(tq.question_id);
+      if (originalQuestion) {
+        row[originalQuestion.perguntaCurta.toUpperCase()] = getTestQuestionResult(tq);
+      }
     }
 
     return row;
-}
-
-const getResults = async () => {
-    const kids = await Kid.find({}).sort('createdAt');
-    const rows = [];
-    let i = 1;
-
-    for (const kid of kids) {
-        let row = createRow();
-
-        row.ID = i;
-        row.NOME = kid.name;
-        row.DN = moment(kid.dateOfBirth).format("DD/MM/YYYY");
-        row.SEXO = kid.sex || '-';
-        row.GESTAÇÃO = kid.gestationalAge;
-
-        const test = await Test.findOne({ cpfKid: kid.cpf });
-        if (! test) {
-            continue;
-        }
-
-        row.DATA = moment(test.createdAt).format("DD/MM/YYYY");
-        row.IDADE = Math.abs(
-            moment(kid.dateOfBirth).diff(moment(test.createdAt), 'years')
-        );
-
-        const testQuestions = await TestQuestion.find(({ 'test_id': test._id}));
-        if (! testQuestions) {
-            continue;
-        }
-
-        for (const testQuestion of testQuestions) {
-            const originalQuestion = findQuestionById(testQuestion.question_id);
-            row[originalQuestion.perguntaCurta.toUpperCase()] = getTestQuestionResult(testQuestion);
-        }
-
-        rows.push(row);
-        i++;
-    }
-
-    return rows;
+  }).filter(Boolean);
 };
 
-router.get('/spreadsheet/results', async (req, res) => {
-    const filename = 'resultados-' + moment().format('DD-MM-YYYY') + '.csv';
+router.get("/spreadsheet/results", async (req, res) => {
+  try {
+    const filename = `resultados-${moment().format("DD-MM-YYYY")}.csv`;
     const data = await getResults();
     const csv = await converter.json2csv(data);
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
     res.send(csv);
+  } catch (err) {
+    console.error("Error generating CSV:", err);
+    res.status(500).send("Erro ao gerar resultados");
+  }
 });
 
 module.exports = router;
